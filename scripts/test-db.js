@@ -1,10 +1,10 @@
 // Script to test MongoDB connection
-// Usage: npx ts-node scripts/test-db.ts
-
-import { connectToDatabase } from '../lib/db-utils';
+// Usage: node scripts/test-db.js
+import { connectToDatabase } from '../dist/lib/db-utils.js';
 
 (async () => {
   try {
+    // Dynamically import the ES module utility
     await connectToDatabase();
     console.log('✅ Database connection successful!');
     process.exit(0);
