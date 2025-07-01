@@ -8,7 +8,7 @@ A Line bot for high school students to chat with AI-powered story characters usi
 - 🎭 Multiple character role-play switching
 - 💾 Conversation history storage
 - 📱 Rich LINE bot interface
-- 🔐 Admin dashboard for character management
+- 🔒 Admin dashboard for character management
 
 ## Tech Stack
 
@@ -36,7 +36,11 @@ A Line bot for high school students to chat with AI-powered story characters usi
      - `MONGODB_URI`, `MONGODB_DB_NAME`, `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`
 
 4. **Validate environment variables:**
-   - The project will check for required environment variables at startup and throw an error if any are missing.
+   - Run:
+     ```sh
+     node scripts/validate-setup.cjs
+     ```
+   - The script will check for required environment variables and files.
 
 ## 🏃 Running the Project
 
@@ -51,33 +55,74 @@ A Line bot for high school students to chat with AI-powered story characters usi
 
 ## 🧪 Testing
 
-- **Test MongoDB connection:**
-  ```sh
-  npx ts-node scripts/test-db.ts
-  ```
-- **Test Characters API endpoint:**
-  ```sh
-  npx ts-node scripts/test-api.ts
-  ```
-- **Simulate Line webhook event:**
-  ```sh
-  npx ts-node scripts/test-webhook.ts
-  ```
+### Webhook Event Testing
 
-## 🗂️ Project Structure
+- **Run all webhook event tests:**
+  ```sh
+  node scripts/test-webhook.mjs
+  ```
+- This will test:
+  - Valid signature (text message event)
+  - Invalid signature
+  - Follow event
+  - Unfollow event
+  - Malformed request
+- **Check the output** for ✅ on each scenario and review the response for error IDs and debug info.
 
-See the top of this README or the project context for a detailed folder and file breakdown.
+### Health Check Endpoint
+- Visit or curl:
+  ```sh
+  http://localhost:3000/api/webhook/line/health
+  ```
+  or the port shown in your terminal (e.g., 3001).
+- Should return JSON with `env`, `database`, `lineApi` all `true` if healthy.
+
+### Local Testing with ngrok
+- To test with the real LINE platform:
+  1. Start your app: `npm run dev`
+  2. In another terminal:
+     ```sh
+     npx ngrok http 3000
+     ```
+  3. Set the ngrok HTTPS URL as your webhook URL in the LINE Developer Console:
+     ```
+     https://<ngrok-id>.ngrok.io/api/webhook/line
+     ```
 
 ## 🛡️ Security & Best Practices
 - All secrets and credentials are managed via environment variables.
 - Admin endpoints require HTTP Basic Auth using `ADMIN_USERNAME` and `ADMIN_PASSWORD`.
 - Webhook requests are verified for authenticity.
 - All API and DB operations use strict TypeScript typing and robust error handling.
+- **Security Checklist:**
+  - [ ] No sensitive data in logs or error messages
+  - [ ] Signature verification enforced for all webhook requests
+  - [ ] All user input validated and sanitized
+  - [ ] Error responses do not leak stack traces or secrets
+  - [ ] Rate limiting considered for production
+  - [ ] Environment variables are not hardcoded
 
-## 📝 Development Notes
-- All utility and API functions are commented for clarity.
-- Use the provided test scripts to verify your setup and endpoints.
-- For local Line webhook testing, use a tool like [ngrok](https://ngrok.com/) to expose your local server.
+## 📝 Manual Test Checklist
+- [ ] Valid signature, valid text message event (should echo back)
+- [ ] Invalid signature (should return 400 with error ID)
+- [ ] Follow event (should send welcome message)
+- [ ] Unfollow event (should log the event)
+- [ ] Malformed request (should return 500 with error ID)
+- [ ] Health check endpoint returns all `true`
+
+## 🛠️ Troubleshooting
+- If environment variables are not loaded in scripts:
+  - Ensure `.env.local` is in the project root and formatted correctly
+  - Use `dotenv.config({ path: '.env.local' })` in scripts
+  - Restart your terminal after changes
+- If webhook tests fail, check:
+  - The app is running (`npm run dev`)
+  - The correct port and URL are used in the test script
+  - The signature is generated with the correct secret
+
+## 📂 Project Structure
+
+See the top of this README or the project context for a detailed folder and file breakdown.
 
 ---
 
