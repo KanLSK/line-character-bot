@@ -24,4 +24,4 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 });
   }
-}
+} 

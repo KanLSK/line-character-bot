@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { WebhookEvent, MessageEvent, TextMessage } from '@line/bot-sdk';
+import { WebhookEvent, MessageEvent, TextMessage, FollowEvent, UnfollowEvent } from '@line/bot-sdk';
 import lineClient from '../../../../lib/line-client';
 import { verifySignature } from '../../../../utils/verify-signature';
 import { validateLineEnv } from '../../../../utils/env-validation';
 import { logger } from '../../../../utils/logger';
 import { LineWebhookEvent } from '../../../../types/line';
 import { createErrorResponse } from '../../../../utils/error-handler';
+import { preprocessUserMessage, sanitizeUserInput } from '../../../../utils/message-preprocessing';
+import { generateCharacterResponse, getCharacterById } from '../../../../services/response-generator';
+import { handleGeminiError } from '../../../../lib/gemini-client';
+import { resetContext } from '../../../../utils/conversation-context';
+import { connectToDatabase } from '../../../../lib/db-utils';
+import Character from '../../../../models/Character';
 
 // Validate environment variables at the start
 validateLineEnv();
+
+// In-memory user state
+const userCharacterMap: Map<string, string> = new Map(); // userId -> characterId
 
 /**
  * Main Line webhook handler for POST requests
@@ -35,14 +44,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse JSON body for event processing
-    const json = JSON.parse(body);
+    let json;
+    try {
+      json = JSON.parse(body);
+    } catch (err) {
+      const errorRes = createErrorResponse('Malformed JSON body', 400, { body });
+      return NextResponse.json(errorRes, { status: 400 });
+    }
     const events: LineWebhookEvent[] = json.events || [];
 
     await Promise.all(
       events.map(async (event) => {
         try {
           await handleEvent(event);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Error handling event', { error });
         }
       })
@@ -74,15 +89,17 @@ async function handleEvent(event: LineWebhookEvent): Promise<void> {
       await handleMessage(event as MessageEvent);
       break;
     case 'follow':
-      await handleFollow(event);
+      await handleFollow(event as FollowEvent);
       break;
     case 'unfollow':
-      await handleUnfollow(event);
+      await handleUnfollow(event as UnfollowEvent);
       break;
     default:
       logger.info('Unhandled event type', { type: event.type });
   }
 }
+
+
 
 /**
  * Handles a Line message event (echoes text messages)
@@ -96,42 +113,149 @@ async function handleMessage(event: MessageEvent): Promise<void> {
     logger.error('No user ID in message event');
     return;
   }
-  // Echo the message back (basic functionality)
-  const replyMessage = {
-    type: 'text' as const,
-    text: `You said: ${textMessage.text}`,
-  };
+  // Default character for new users
+  if (!userCharacterMap.has(userId)) {
+    try {
+      await connectToDatabase();
+      const defaultCharacter = await Character.findOne({ name: 'Velorien', isActive: true });
+      if (defaultCharacter) {
+        userCharacterMap.set(userId, (defaultCharacter as any)._id.toString());
+      } else {
+        logger.error('Default character Velorien not found');
+        userCharacterMap.set(userId, '689b995432dc108a22343309'); // Fallback ObjectId
+      }
+    } catch (error) {
+      logger.error('Error setting default character', { error });
+      userCharacterMap.set(userId, '689b995432dc108a22343309'); // Fallback ObjectId
+    }
+  }
+  const { isCommand, command, args, text } = preprocessUserMessage(textMessage.text);
+  if (isCommand && command === 'character') {
+    const charName = args && args[0] ? args[0].toLowerCase() : '';
+    
+    try {
+      await connectToDatabase();
+      const character = await Character.findOne({ name: { $regex: new RegExp(charName, 'i') }, isActive: true });
+      
+      if (character) {
+        userCharacterMap.set(userId, (character as any)._id.toString());
+        resetContext(userId);
+        const intro = `You are now chatting with ${character.name}!\n\n${character.description}`;
+        await lineClient.replyMessage(event.replyToken, { type: 'text', text: intro });
+      } else {
+        // Get list of available characters
+        const availableCharacters = await Character.find({ isActive: true }).select('name');
+        const available = availableCharacters.map(c => c.name).join(', ');
+        await lineClient.replyMessage(event.replyToken, { type: 'text', text: `Invalid character. Available: ${available}` });
+      }
+    } catch (error) {
+      logger.error('Error switching character', { error, characterName: charName });
+      await lineClient.replyMessage(event.replyToken, { type: 'text', text: 'Sorry, I had trouble switching characters. Please try again.' });
+    }
+    return;
+  }
+  // Regular message: sanitize and generate response
+  const sanitized = sanitizeUserInput(text);
+  const characterId = userCharacterMap.get(userId) || '689b995432dc108a22343309'; // Velorien's ObjectId
   try {
-    await lineClient.replyMessage(event.replyToken, replyMessage);
-    logger.info('Echoed message to user', { userId, text: textMessage.text });
-  } catch (error) {
-    logger.error('Error sending reply', { error });
+    const result = await generateCharacterResponse({ characterId, userId, userMessage: sanitized });
+    if (result.success) {
+      await lineClient.replyMessage(event.replyToken, { type: 'text', text: result.response || '...' });
+    } else {
+      await lineClient.replyMessage(event.replyToken, { type: 'text', text: result.error || 'Sorry, something went wrong.' });
+    }
+  } catch (error: unknown) {
+    const friendly = handleGeminiError(error);
+    await lineClient.replyMessage(event.replyToken, { type: 'text', text: friendly });
   }
 }
 
 /**
  * Handles a Line follow event (sends welcome message)
  */
-async function handleFollow(event: WebhookEvent): Promise<void> {
+async function handleFollow(event: FollowEvent): Promise<void> {
   const userId = event.source.userId;
   if (!userId) return;
+  
+  // Set default character for new user
+  userCharacterMap.set(userId, '689b995432dc108a22343309'); // Velorien's ObjectId
+  resetContext(userId);
+  
+  // Get available characters for the welcome message
+  let availableCharacters = 'Velorien, Sherlock, Hermione, Yoda, Luna';
+  try {
+    await connectToDatabase();
+    const characters = await Character.find({ isActive: true }).select('name');
+    availableCharacters = characters.map(c => c.name).join(', ');
+  } catch (error) {
+    logger.error('Error fetching characters for welcome message', { error });
+  }
+  
   const welcomeMessage = {
     type: 'text' as const,
-    text: 'Welcome to Character Chat Bot! 🎭\n\nI\'m here to help you chat with amazing story characters. Type anything to get started!',
+    text: `สวัสดีครับ! ยินดีต้อนรับสู่ Siriraj Medical Camp 2025! 🎭
+
+ผมคือ Velorien ตัวละครที่พร้อมจะคุยกับคุณ 😊
+
+คุณสามารถคุยกับตัวละครอื่นๆ ได้โดยพิมพ์:
+/character [ชื่อตัวละคร]
+
+ตัวละครที่มี: ${availableCharacters}
+
+ลองพิมพ์อะไรก็ได้เพื่อเริ่มคุยกันเลยครับ! 💙`
   };
+  
   try {
-    await lineClient.pushMessage(userId, welcomeMessage);
+    logger.info('Attempting to send welcome message', { 
+      userId, 
+      replyToken: event.replyToken,
+      messageLength: welcomeMessage.text.length 
+    });
+    
+    await lineClient.replyMessage(event.replyToken, welcomeMessage);
     logger.info('Sent welcome message to new follower', { userId });
   } catch (error) { 
-    logger.error('Error sending welcome message', { error });
+    logger.error('Error sending welcome message', { 
+      error, 
+      userId, 
+      replyToken: event.replyToken,
+      messageLength: welcomeMessage.text.length 
+    });
+    
+    // Try with a simpler message as fallback
+    try {
+      const fallbackMessage = {
+        type: 'text' as const,
+        text: 'สวัสดีครับ! ยินดีต้อนรับสู่ Siriraj Medical Camp 2025! 😊'
+      };
+      await lineClient.replyMessage(event.replyToken, fallbackMessage);
+      logger.info('Sent fallback welcome message', { userId });
+    } catch (fallbackError) {
+      logger.error('Failed to send fallback welcome message', { fallbackError, userId });
+      
+      // Try with English as last resort
+      try {
+        const englishMessage = {
+          type: 'text' as const,
+          text: 'Hello! Welcome to Siriraj Medical Camp 2025! 😊'
+        };
+        await lineClient.replyMessage(event.replyToken, englishMessage);
+        logger.info('Sent English fallback welcome message', { userId });
+      } catch (englishError) {
+        logger.error('Failed to send English fallback message', { englishError, userId });
+      }
+    }
   }
 }
 
 /**
  * Handles a Line unfollow event (logs the event)
  */
-async function handleUnfollow(event: WebhookEvent): Promise<void> {
+async function handleUnfollow(event: UnfollowEvent): Promise<void> {
   const userId = event.source.userId;
+  if (!userId) return;
+  userCharacterMap.delete(userId);
+  resetContext(userId);
   logger.info(`User ${userId} unfollowed the bot`);
   // Add any cleanup logic here if needed
 } 

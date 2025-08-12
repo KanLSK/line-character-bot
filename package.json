@@ -9,9 +9,17 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next out"
+    "clean": "rm -rf .next out",
+    "seed": "npx ts-node --esm scripts/seed-characters.ts",
+    "test-gemini": "npx ts-node --esm scripts/test-gemini.ts",
+    "test-advanced": "curl 'http://localhost:3000/api/test-advanced?action=test-all&userId=test-user&character=velorien&message=เหงาจัง'",
+    "validate": "node scripts/validate-setup.cjs",
+    "deploy-prepare": "./scripts/deploy-prepare.sh",
+    "test-welcome": "echo 'To test welcome message: 1) Add bot as friend in Line, 2) Check server logs for welcome message', 3) Ensure webhook URL is set in Line Developer Console'",
+    "test-line": "echo 'Usage: node scripts/test-line-message.cjs <userId> [message]'"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@line/bot-sdk": "^10.0.0",
     "@types/node-fetch": "^2.6.12",
     "dotenv": "^17.0.0",
@@ -19,7 +27,6 @@
     "mongoose": "^8.16.1",
     "next": "15.3.4",
     "node-fetch": "^3.3.2",
-    "openai": "^5.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "uuid": "^11.1.0"

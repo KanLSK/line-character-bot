@@ -1,4 +1,4 @@
-import { WebhookEvent, MessageEvent, TextMessage, FollowEvent, UnfollowEvent, User } from '@line/bot-sdk';
+import { WebhookEvent, MessageEvent, FollowEvent, UnfollowEvent, User } from '@line/bot-sdk';
 
 /**
  * All supported Line webhook event types
@@ -28,7 +28,7 @@ export interface LineBotResponse {
   type: LineMessageType;
   text?: string;
   altText?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -40,7 +40,7 @@ export interface LineWebhookRequest {
 
 export interface LineWebhookResponse {
   message: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

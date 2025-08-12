@@ -1,12 +1,15 @@
 export const logger = {
-    info: (message: string, data?: any) => {
-      console.log(`[INFO] ${new Date().toISOString()}: ${message}`, data || '');
+    info: (message: string, meta?: unknown) => {
+      // eslint-disable-next-line no-console
+      console.info(message, meta);
     },
-    error: (message: string, error?: any) => {
-      console.error(`[ERROR] ${new Date().toISOString()}: ${message}`, error || '');
+    error: (message: string, meta?: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error(message, meta);
     },
-    warn: (message: string, data?: any) => {
-      console.warn(`[WARN] ${new Date().toISOString()}: ${message}`, data || '');
+    warn: (message: string, meta?: unknown) => {
+      // eslint-disable-next-line no-console
+      console.warn(message, meta);
     },
     debug: (message: string, data?: any) => {
       if (process.env.NODE_ENV === 'development') {

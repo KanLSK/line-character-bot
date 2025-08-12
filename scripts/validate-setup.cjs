@@ -9,6 +9,7 @@ const requiredFiles = [
   '.env.local',
   'utils/env-validation.ts',
   'lib/line-client.ts',
+  'lib/gemini-client.ts',
   'utils/verify-signature.ts',
   'utils/logger.ts',
   'app/api/webhook/line/route.ts',
@@ -31,7 +32,7 @@ function checkEnvVars() {
     'LINE_CHANNEL_ACCESS_TOKEN',
     'LINE_CHANNEL_SECRET',
     'MONGODB_URI',
-    'OPENAI_API_KEY',
+    'GEMINI_API_KEY',
   ];
   let allExist = true;
   for (const v of requiredVars) {

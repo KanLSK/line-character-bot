@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { logError } from './logger';
+import { logger } from './logger';
 
 /**
  * Standard error response format for API/webhook errors
@@ -25,9 +25,8 @@ export function createErrorResponse(
 ): ErrorResponse {
   const errorId = uuidv4();
   const message = typeof error === 'string' ? error : error.message;
-  logError({
+  logger.error(message, {
     errorId,
-    message,
     status,
     details,
     stack: error instanceof Error ? error.stack : undefined,
