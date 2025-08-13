@@ -13,6 +13,7 @@ import { resetContext } from '../../../../utils/conversation-context';
 import { connectToDatabase } from '../../../../lib/db-utils';
 import Character from '../../../../models/Character';
 import { ContextManager } from '../../../../utils/context-manager';
+import { detectEmotion } from '../../../../utils/emotion-detector';
 
 // Validate environment variables at the start
 validateLineEnv();
@@ -100,8 +101,6 @@ async function handleEvent(event: LineWebhookEvent): Promise<void> {
   }
 }
 
-
-
 /**
  * Handles a Line message event (echoes text messages)
  */
@@ -182,13 +181,78 @@ async function handleMessage(event: MessageEvent): Promise<void> {
     }
     return;
   }
+  
+  // Handle help command
+  if (isCommand && command === 'help') {
+    const helpMessage = `🎭 **Siriraj Medical Camp 2025 Chatbot**
+
+**Commands:**
+/character [name] - Switch to a different character
+/help - Show this help message
+
+**Available Characters:**
+- Velorien (default) - Gentle and empathetic friend
+- Sherlock - Brilliant detective
+- Hermione - Intelligent witch
+- Yoda - Wise Jedi Master
+- Luna - Dreamy and mystical
+
+**Features:**
+- Natural conversations with AI characters
+- Emotional intelligence
+- Personalized responses
+- Multi-language support (Thai/English)
+
+Just start chatting naturally! 😊`;
+    
+    await lineClient.replyMessage(event.replyToken, { type: 'text', text: helpMessage });
+    return;
+  }
+  
   // Regular message: sanitize and generate response
   const sanitized = sanitizeUserInput(text);
   const characterId = userCharacterMap.get(userId) || '689b995432dc108a22343309'; // Velorien's ObjectId
+  
   try {
     const result = await generateCharacterResponse({ characterId, userId, userMessage: sanitized });
     if (result.success) {
-      await lineClient.replyMessage(event.replyToken, { type: 'text', text: result.response || '...' });
+      const response = result.response || '...';
+      
+      // Add quick reply buttons for better interaction
+      const quickReplyItems = [
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '😊 How are you?',
+            text: 'คุณเป็นยังไงบ้างครับ?'
+          }
+        },
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '🎭 Switch Character',
+            text: '/character'
+          }
+        },
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '❓ Help',
+            text: '/help'
+          }
+        }
+      ];
+      
+      await lineClient.replyMessage(event.replyToken, {
+        type: 'text',
+        text: response,
+        quickReply: {
+          items: quickReplyItems
+        }
+      });
     } else {
       await lineClient.replyMessage(event.replyToken, { type: 'text', text: result.error || 'Sorry, something went wrong.' });
     }
@@ -230,7 +294,35 @@ async function handleFollow(event: FollowEvent): Promise<void> {
 
 ตัวละครที่มี: ${availableCharacters}
 
-ลองพิมพ์อะไรก็ได้เพื่อเริ่มคุยกันเลยครับ! 💙`
+ลองพิมพ์อะไรก็ได้เพื่อเริ่มคุยกันเลยครับ! 💙`,
+    quickReply: {
+      items: [
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '😊 สวัสดีครับ!',
+            text: 'สวัสดีครับ! ยินดีที่ได้รู้จักครับ'
+          }
+        },
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '🎭 ดูตัวละครอื่น',
+            text: '/character'
+          }
+        },
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '❓ วิธีใช้งาน',
+            text: '/help'
+          }
+        }
+      ]
+    }
   };
   
   try {
@@ -268,22 +360,24 @@ async function handleFollow(event: FollowEvent): Promise<void> {
           text: 'Hello! Welcome to Siriraj Medical Camp 2025! 😊'
         };
         await lineClient.replyMessage(event.replyToken, englishMessage);
-        logger.info('Sent English fallback welcome message', { userId });
+        logger.info('Sent English welcome message', { userId });
       } catch (englishError) {
-        logger.error('Failed to send English fallback message', { englishError, userId });
+        logger.error('Failed to send English welcome message', { englishError, userId });
       }
     }
   }
 }
 
 /**
- * Handles a Line unfollow event (logs the event)
+ * Handles a Line unfollow event
  */
 async function handleUnfollow(event: UnfollowEvent): Promise<void> {
   const userId = event.source.userId;
   if (!userId) return;
+  
+  // Clean up user data
   userCharacterMap.delete(userId);
   resetContext(userId);
-  logger.info(`User ${userId} unfollowed the bot`);
-  // Add any cleanup logic here if needed
+  
+  logger.info('User unfollowed', { userId });
 } 

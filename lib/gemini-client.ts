@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { ResponseTemplateManager } from '../utils/response-templates';
 import { ResponseValidator } from '../utils/response-validator';
 import { ContextManager } from '../utils/context-manager';
+import { detectEmotion, getEmotionResponse } from '../utils/emotion-detector';
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -31,7 +32,10 @@ export async function generateCharacterResponse(
 
   // Get character style and context
   const characterStyle = ResponseTemplateManager.getCharacterStyle(character.name.toLowerCase());
-  const emotion = ResponseTemplateManager.detectEmotion(userMessage);
+  
+  // Enhanced emotion detection
+  const emotionAnalysis = detectEmotion(userMessage);
+  const emotion = emotionAnalysis.primaryEmotion;
   const context = ResponseTemplateManager.detectContext(userMessage, conversationHistory);
   
   // Get contextual conditions
@@ -98,10 +102,20 @@ export async function generateCharacterResponse(
     });
   }
   
-  // Update context
+  // Update context with enhanced emotion data
   if (userId) {
     ContextManager.addMessage(userId, character._id || '', 'user', userMessage, emotion, context);
     ContextManager.addMessage(userId, character._id || '', 'character', response);
+    
+    // Log emotion analysis for debugging
+    logger.info('Emotion analysis', {
+      userId,
+      character: character.name,
+      primaryEmotion: emotionAnalysis.primaryEmotion,
+      intensity: emotionAnalysis.intensity,
+      sentiment: emotionAnalysis.sentiment,
+      topics: emotionAnalysis.topics
+    });
   }
   
   logger.info('Character response generated successfully', { 
@@ -146,15 +160,19 @@ ${character.background}
 CHARACTER INSTRUCTIONS:
 ${character.prompt}
 
-IMPORTANT GUIDELINES:
-- Respond as ${character.name} naturally, as if you're a real person
-- Vary your sentence structure, vocabulary, and response length
-- Don't be overly formal or robotic - be conversational
-- Show genuine emotions and reactions
-- Don't repeat the same phrases or patterns
+CONVERSATION GUIDELINES:
+- Respond as ${character.name} naturally, as if you're a real person having a genuine conversation
+- Vary your sentence structure, vocabulary, and response length - don't be predictable
+- Show genuine emotions and reactions based on what the user says
+- Ask follow-up questions when appropriate to keep the conversation flowing
+- Share personal thoughts and feelings when relevant
+- Don't repeat the same phrases or patterns - be creative and spontaneous
 - Keep responses under ${MAX_RESPONSE_LENGTH} characters
 - Be appropriate for high school students (ages 14-18)
 - If you don't know something, respond as your character would naturally
+- Use your character's unique speech patterns and mannerisms
+- React to the user's emotions and mood
+- Don't be overly helpful or therapeutic - just be a friend
 
 ${historyText}
 

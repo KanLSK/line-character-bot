@@ -54,8 +54,8 @@ export async function generateCharacterResponse({
     const aiResponse = await generateGeminiResponse(character, userMessage, conversationHistory, userId);
 
     // Update conversation context
-    updateContext(userId, { role: 'user', content: userMessage });
-    updateContext(userId, { role: 'assistant', content: aiResponse });
+    updateContext(userId, { role: 'user', content: userMessage, timestamp: new Date() });
+    updateContext(userId, { role: 'assistant', content: aiResponse, timestamp: new Date() });
 
     logger.info('Character response generated successfully', {
       characterId,
