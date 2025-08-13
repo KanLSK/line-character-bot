@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, GenerativeModel, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import type { Character } from '../types/character';
 import { logger } from '../utils/logger';
 import { ResponseTemplateManager } from '../utils/response-templates';
@@ -37,10 +37,10 @@ export async function generateCharacterResponse(
   // Get contextual conditions
   const conditions = userId ? ContextManager.getContextualConditions(userId, character._id || '', userMessage) : null;
   
-  // Check if we should use template response
+  // Reduce template usage to 5% for more natural responses
   const shouldUseTemplate = userId ? 
-    ContextManager.shouldUseTemplate(userId, character._id || '', emotion, context) : 
-    true;
+    (Math.random() < 0.05 && ContextManager.shouldUseTemplate(userId, character._id || '', emotion, context)) : 
+    false;
   
   let response: string;
   
@@ -66,7 +66,7 @@ export async function generateCharacterResponse(
       response = await generateAIResponse(character, userMessage, conversationHistory, userId);
     }
   } else {
-    // Generate AI response
+    // Generate AI response (80% of the time)
     response = await generateAIResponse(character, userMessage, conversationHistory, userId);
   }
   
@@ -127,52 +127,53 @@ function buildCharacterPrompt(
   conversationHistory: string[], 
   userMessage: string
 ): string {
-  const recentHistory = conversationHistory.slice(-5); // Last 5 messages
+  const recentHistory = conversationHistory.slice(-6); // Last 6 messages (3 exchanges)
   const historyText = recentHistory.length > 0 
     ? `\n\nRecent conversation:\n${recentHistory.join('\n')}`
     : '';
 
-  return `You are ${character.name}, a character from a story. 
+  return `You are ${character.name}. 
 
-CHARACTER ROLE:
+CORE IDENTITY:
 ${character.description}
 
-PERSONALITY TRAITS:
+PERSONALITY:
 ${character.personality}
 
 BACKGROUND:
 ${character.background}
 
-CHARACTER PROMPT:
+CHARACTER INSTRUCTIONS:
 ${character.prompt}
 
-CONVERSATION RULES:
-- Stay completely in character as ${character.name}
-- Respond naturally and conversationally
+IMPORTANT GUIDELINES:
+- Respond as ${character.name} naturally, as if you're a real person
+- Vary your sentence structure, vocabulary, and response length
+- Don't be overly formal or robotic - be conversational
+- Show genuine emotions and reactions
+- Don't repeat the same phrases or patterns
 - Keep responses under ${MAX_RESPONSE_LENGTH} characters
 - Be appropriate for high school students (ages 14-18)
-- Show your unique personality and background
-- If asked about topics outside your knowledge, respond as your character would
-- Don't break character or mention that you're an AI
+- If you don't know something, respond as your character would naturally
 
 ${historyText}
 
-Current user message: "${userMessage}"
+User: "${userMessage}"
 
-Respond as ${character.name}:`;
+${character.name}:`;
 }
 
 /**
  * Handles different types of Gemini errors and returns appropriate fallback messages
  */
-export function handleGeminiError(error: any): string {
+export function handleGeminiError(error: unknown): string {
   console.error('Handling Gemini error:', error);
 
-  const errorMessage = error?.message?.toLowerCase() || '';
-  const errorCode = error?.code || '';
+  const errorMessage = (error as Error)?.message?.toLowerCase() || '';
+  const errorCode = (error as { code?: string })?.code || '';
 
   // Rate limit exceeded
-  if (errorMessage.includes('rate limit') || errorMessage.includes('quota') || errorCode === 429) {
+  if (errorMessage.includes('rate limit') || errorMessage.includes('quota') || errorCode === '429') {
     return "I'm a bit busy right now! Please try again in a moment.";
   }
 
@@ -187,7 +188,7 @@ export function handleGeminiError(error: any): string {
   }
 
   // Invalid API key
-  if (errorMessage.includes('api key') || errorMessage.includes('authentication') || errorCode === 401) {
+  if (errorMessage.includes('api key') || errorMessage.includes('authentication') || errorCode === '401') {
     logger.error('Gemini API key error', { error });
     return "I'm having technical difficulties. Please contact support.";
   }
@@ -248,8 +249,9 @@ export async function testGeminiConnection(): Promise<{ success: boolean; messag
     } else {
       return { success: false, message: 'Unexpected response from Gemini' };
     }
-  } catch (error: any) {
-    return { success: false, message: `Gemini connection failed: ${error.message}` };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, message: `Gemini connection failed: ${errorMessage}` };
   }
 }
 
@@ -314,7 +316,7 @@ async function generateAIResponse(
 
       return truncatedResponse;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Gemini API attempt ${attempt} failed:`, error);
       
       if (attempt === MAX_RETRIES) {

@@ -171,6 +171,11 @@ export class ResponseTemplateManager {
     context: string,
     conditions?: any
   ): string | null {
+    // Reduce template usage to only 10% of the time for more natural responses
+    if (Math.random() > 0.1) {
+      return null;
+    }
+    
     const templates = this.getTemplatesForCharacter(characterId);
     
     // Filter by emotion and context

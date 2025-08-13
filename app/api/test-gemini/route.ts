@@ -3,6 +3,7 @@ import { generateCharacterResponse, testGeminiConnection } from '../../../lib/ge
 import { connectToDatabase } from '../../../lib/db-utils';
 import Character from '../../../models/Character';
 import { logger } from '../../../utils/logger';
+import type { Character as CharacterType } from '../../../types/character';
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,7 +109,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate test response
-    const characterData = character.toObject() as any;
+    const characterData: CharacterType = {
+      _id: character._id?.toString(),
+      id: character._id?.toString() || '',
+      name: character.name,
+      description: character.description,
+      personality: character.personality,
+      background: character.background,
+      prompt: character.prompt,
+      imageUrl: character.imageUrl,
+      isActive: character.isActive,
+      createdAt: character.createdAt,
+      updatedAt: character.updatedAt
+    };
     const response = await generateCharacterResponse(characterData, message);
 
     logger.info('Gemini test successful', {
@@ -129,11 +142,12 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Gemini test failed', { error });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return NextResponse.json({
       success: false,
-      error: error.message || 'Unknown error occurred'
+      error: errorMessage
     }, { status: 500 });
   }
 }
@@ -150,11 +164,12 @@ export async function GET(request: NextRequest) {
       usage: 'Use POST with { characterId, message } to test character responses'
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Gemini connection test failed', { error });
+    const errorMessage = error instanceof Error ? error.message : 'Connection test failed';
     return NextResponse.json({
       success: false,
-      error: error.message || 'Connection test failed'
+      error: errorMessage
     }, { status: 500 });
   }
 } 

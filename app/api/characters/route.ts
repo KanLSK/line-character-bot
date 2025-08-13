@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Character from '@/models/Character';
-import { findAll, createOne, updateOne, deleteOne } from '@/lib/db-utils';
+import { findAll, createOne, updateOne } from '@/lib/db-utils';
 import { CreateCharacterRequest } from '@/types/character';
 
 function isAdmin(request: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET() {
   try {
     const characters = await findAll(Character, { isActive: true }, { createdAt: -1 });
     return NextResponse.json(characters);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch characters' }, { status: 500 });
   }
 }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const body: CreateCharacterRequest = await request.json();
     const character = await createOne(Character, { ...body, isActive: true });
     return NextResponse.json(character, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create character' }, { status: 500 });
   }
 }
@@ -44,7 +44,7 @@ export async function PUT(request: NextRequest) {
     const { _id, ...update } = await request.json();
     const updated = await updateOne(Character, { _id }, update);
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to update character' }, { status: 500 });
   }
 }
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest) {
     const { _id } = await request.json();
     const deleted = await updateOne(Character, { _id }, { isActive: false });
     return NextResponse.json(deleted);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to delete character' }, { status: 500 });
   }
 }

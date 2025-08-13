@@ -341,6 +341,12 @@ export class ContextManager {
     logger.info('Context cleared', { userId, characterId });
   }
 
+  static clearUserContext(userId: string, characterId: string): void {
+    const key = `${userId}_${characterId}`;
+    this.contexts.delete(key);
+    logger.info('User context cleared', { userId, characterId });
+  }
+
   static getAllContexts(): Map<string, ConversationContext> {
     return this.contexts;
   }

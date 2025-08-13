@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { WebhookEvent, MessageEvent, TextMessage, FollowEvent, UnfollowEvent } from '@line/bot-sdk';
+import { MessageEvent, TextMessage, FollowEvent, UnfollowEvent } from '@line/bot-sdk';
 import lineClient from '../../../../lib/line-client';
 import { verifySignature } from '../../../../utils/verify-signature';
 import { validateLineEnv } from '../../../../utils/env-validation';
@@ -7,11 +7,12 @@ import { logger } from '../../../../utils/logger';
 import { LineWebhookEvent } from '../../../../types/line';
 import { createErrorResponse } from '../../../../utils/error-handler';
 import { preprocessUserMessage, sanitizeUserInput } from '../../../../utils/message-preprocessing';
-import { generateCharacterResponse, getCharacterById } from '../../../../services/response-generator';
+import { generateCharacterResponse } from '../../../../services/response-generator';
 import { handleGeminiError } from '../../../../lib/gemini-client';
 import { resetContext } from '../../../../utils/conversation-context';
 import { connectToDatabase } from '../../../../lib/db-utils';
 import Character from '../../../../models/Character';
+import { ContextManager } from '../../../../utils/context-manager';
 
 // Validate environment variables at the start
 validateLineEnv();
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     let json;
     try {
       json = JSON.parse(body);
-    } catch (err) {
+    } catch {
       const errorRes = createErrorResponse('Malformed JSON body', 400, { body });
       return NextResponse.json(errorRes, { status: 400 });
     }
@@ -138,10 +139,37 @@ async function handleMessage(event: MessageEvent): Promise<void> {
       const character = await Character.findOne({ name: { $regex: new RegExp(charName, 'i') }, isActive: true });
       
       if (character) {
-        userCharacterMap.set(userId, (character as any)._id.toString());
+        const characterId = (character as any)._id.toString();
+        userCharacterMap.set(userId, characterId);
+        
+        // Clear all context for this user
         resetContext(userId);
-        const intro = `You are now chatting with ${character.name}!\n\n${character.description}`;
-        await lineClient.replyMessage(event.replyToken, { type: 'text', text: intro });
+        
+        // Clear context manager data for this user-character combination
+        ContextManager.clearUserContext(userId, characterId);
+        
+        // Generate a natural character introduction
+        const introPrompt = `You are ${character.name}. A user has just switched to chat with you. Give them a brief, natural greeting that shows your personality. Keep it under 200 characters and make it feel like a real person greeting someone they just met.`;
+        
+        try {
+          const introResult = await generateCharacterResponse({ 
+            characterId, 
+            userId, 
+            userMessage: introPrompt 
+          });
+          
+          if (introResult.success && introResult.response) {
+            await lineClient.replyMessage(event.replyToken, { type: 'text', text: introResult.response });
+          } else {
+            // Fallback introduction
+            const fallbackIntro = `สวัสดีครับ! ผมคือ ${character.name} 😊\n\n${character.description.substring(0, 150)}...`;
+            await lineClient.replyMessage(event.replyToken, { type: 'text', text: fallbackIntro });
+          }
+        } catch (introError) {
+          logger.error('Error generating character intro', { error: introError, characterName: character.name });
+          const fallbackIntro = `สวัสดีครับ! ผมคือ ${character.name} 😊\n\n${character.description.substring(0, 150)}...`;
+          await lineClient.replyMessage(event.replyToken, { type: 'text', text: fallbackIntro });
+        }
       } else {
         // Get list of available characters
         const availableCharacters = await Character.find({ isActive: true }).select('name');
@@ -187,8 +215,8 @@ async function handleFollow(event: FollowEvent): Promise<void> {
     await connectToDatabase();
     const characters = await Character.find({ isActive: true }).select('name');
     availableCharacters = characters.map(c => c.name).join(', ');
-  } catch (error) {
-    logger.error('Error fetching characters for welcome message', { error });
+  } catch {
+    logger.error('Error fetching characters for welcome message');
   }
   
   const welcomeMessage = {
