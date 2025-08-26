@@ -59,100 +59,76 @@ export async function POST(request: NextRequest) {
       // Seed medical camp data
       const medicalCamps = [
         {
-          title: "Siriraj Medical Camp 2025 - General Health Check",
-          description: "Comprehensive health screening and consultation for the general public. Free basic health check including blood pressure, blood sugar, and BMI measurement.",
-          date: "March 15-20, 2025",
-          location: "Siriraj Hospital, Bangkok",
-          organizer: "Faculty of Medicine Siriraj Hospital, Mahidol University",
+          title: "ค่ายเส้นทางสู่หมอศิริราช 2025",
+          titleEn: "Siriraj Medical Career Path Camp 2025",
+          description: "ค่ายเส้นทางสู่หมอศิริราชคือกิจกรรมที่นักศึกษาแพทย์ศิริราชจัดขึ้นภายใต้การกำกับดูแลของฝ่ายกิจการนักศึกษา คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล จัดขึ้นเพื่อเปิดโอกาสให้นักเรียนมัธยมปลายทั่วประเทศ ได้สัมผัสการเรียนแพทย์ทั้งชั้น pre-clinic และ clinic ได้รู้จักคณะแพทยศาสตร์ศิริราชพยาบาลมากขึ้น และมีปฏิสัมพันธ์กับนักศึกษาแพทย์ เพื่อเรียนรู้ชีวิตความเป็นอยู่และสร้างความสัมพันธ์อันดีระหว่างกัน",
+          descriptionEn: "Siriraj Medical Career Path Camp is an activity organized by Siriraj medical students under the supervision of the Student Affairs Division, Faculty of Medicine Siriraj Hospital, Mahidol University. It is organized to provide opportunities for high school students nationwide to experience medical studies in both pre-clinic and clinic classes, to get to know the Faculty of Medicine Siriraj Hospital better, and to interact with medical students to learn about their lifestyle and build good relationships.",
+          date: "13-14 ธันวาคม 2568 (เสาร์-อาทิตย์)",
+          dateEn: "December 13-14, 2025 (Saturday-Sunday)",
+          location: "คณะแพทยศาสตร์ศิริราชพยาบาล",
+          locationEn: "Faculty of Medicine Siriraj Hospital",
+          organizer: "ฝ่ายกิจการนักศึกษา คณะแพทยศาสตร์ศิริราชพยาบาล มหาวิทยาลัยมหิดล",
+          organizerEn: "Student Affairs Division, Faculty of Medicine Siriraj Hospital, Mahidol University",
           contactInfo: {
             phone: "02-419-7000",
             email: "medicalcamp@siriraj.hospital",
             website: "https://www.siriraj.hospital/medicalcamp2025"
           },
           activities: [
-            "Free health screening",
-            "Consultation with specialists",
-            "Health education workshops",
-            "Nutrition counseling",
-            "Exercise demonstration"
+            "สัมผัสการเรียนแพทย์ชั้น pre-clinic",
+            "สัมผัสการเรียนแพทย์ชั้น clinic",
+            "เรียนรู้ชีวิตความเป็นอยู่ของนักศึกษาแพทย์",
+            "สร้างความสัมพันธ์กับนักศึกษาแพทย์",
+            "กิจกรรมค้างคืนที่ศูนย์ฝึกอบรมและปฏิบัติธรรมศิริราช (ไม่บังคับ)"
+          ],
+          activitiesEn: [
+            "Experience pre-clinic medical studies",
+            "Experience clinic medical studies",
+            "Learn about medical students' lifestyle",
+            "Build relationships with medical students",
+            "Overnight activities at Siriraj Training and Meditation Center (optional)"
           ],
           requirements: [
-            "Thai ID card or passport",
-            "No appointment needed",
-            "Fasting for 8-12 hours (for blood tests)"
+            "เป็นนักเรียนชั้นมัธยมศึกษาตอนปลาย (ม.4 - ม.6)",
+            "สำเนาบัตรประชาชน",
+            "ไม่มีค่าใช้จ่ายในการสมัคร",
+            "ผู้ผ่านการคัดเลือกมีค่าใช้จ่าย 1,000 บาท"
           ],
-          registrationInfo: "Walk-in registration available. Online pre-registration recommended at www.siriraj.hospital/medicalcamp2025",
+          requirementsEn: [
+            "High school students (Grade 10-12)",
+            "Copy of ID card",
+            "No application fee",
+            "Selected participants pay 1,000 THB"
+          ],
+          registrationInfo: "เปิดรับสมัคร 5 กันยายน 18:00 น. - 28 กันยายน 23:59 น. ประกาศผล 26 ตุลาคม 18:00 น. จำนวนที่รับ 260 คน",
+          registrationInfoEn: "Application opens September 5, 18:00 - September 28, 23:59. Results announced October 26, 18:00. Limited to 260 participants.",
           benefits: [
-            "Free comprehensive health check",
-            "Personalized health advice",
-            "Follow-up care recommendations",
-            "Health education materials"
+            "ประสบการณ์การเรียนแพทย์จริง",
+            "ความรู้เกี่ยวกับคณะแพทยศาสตร์ศิริราช",
+            "ความสัมพันธ์กับนักศึกษาแพทย์",
+            "โอกาสในการเข้าศึกษาต่อคณะแพทยศาสตร์"
           ],
-          category: "general"
-        },
-        {
-          title: "Siriraj Medical Camp 2025 - Specialized Cardiology",
-          description: "Specialized cardiac screening and consultation for individuals with heart-related concerns or family history of heart disease.",
-          date: "March 22-25, 2025",
-          location: "Siriraj Heart Center, Bangkok",
-          organizer: "Division of Cardiology, Siriraj Hospital",
-          contactInfo: {
-            phone: "02-419-7500",
-            email: "cardiology@siriraj.hospital",
-            website: "https://www.siriraj.hospital/cardiology-camp"
-          },
-          activities: [
-            "ECG examination",
-            "Echocardiogram screening",
-            "Cardiac consultation",
-            "Risk factor assessment",
-            "Lifestyle modification guidance"
+          benefitsEn: [
+            "Real medical study experience",
+            "Knowledge about Siriraj Faculty of Medicine",
+            "Relationships with medical students",
+            "Opportunity for medical school admission"
           ],
-          requirements: [
-            "Age 40+ or family history of heart disease",
-            "Pre-registration required",
-            "Bring previous medical records if available"
+          timeline: [
+            "5 กันยายน 18:00 น. - เปิดรับสมัคร กรอกข้อมูลส่วนตัว สำเนาบัตรประชาชน และทำข้อสอบบนเว็บไซต์",
+            "28 กันยายน 23:59 น. - ปิดรับสมัคร",
+            "26 ตุลาคม 18:00 น. - ประกาศผลผู้ผ่านการคัดเลือก 260 คน และรายชื่อเรียกสำรอง 50 คน",
+            "2 พฤศจิกายน - ผู้ผ่านการคัดเลือกกรอกข้อมูลเพิ่มเติม ชำระค่าสมัคร 1,000 บาท และส่งใบปพ.7",
+            "9 พฤศจิกายน - การรายชื่อสำรองสิ้นสุด"
           ],
-          registrationInfo: "Pre-registration required. Limited slots available. Call 02-419-7500 or register online.",
-          benefits: [
-            "Comprehensive cardiac assessment",
-            "Early detection of heart conditions",
-            "Personalized treatment plans",
-            "Follow-up care coordination"
+          timelineEn: [
+            "September 5, 18:00 - Application opens, fill personal information, ID card copy, and take online test",
+            "September 28, 23:59 - Application closes",
+            "October 26, 18:00 - Announce 260 selected participants and 50 waitlist",
+            "November 2 - Selected participants fill additional information, pay 1,000 THB fee, and submit transcript",
+            "November 9 - Waitlist process ends"
           ],
-          category: "specialized"
-        },
-        {
-          title: "Siriraj Medical Camp 2025 - Diabetes Management Workshop",
-          description: "Educational workshop for diabetes patients and their families. Learn about proper diabetes management, diet, and lifestyle modifications.",
-          date: "March 28-30, 2025",
-          location: "Siriraj Diabetes Center, Bangkok",
-          organizer: "Division of Endocrinology, Siriraj Hospital",
-          contactInfo: {
-            phone: "02-419-7800",
-            email: "diabetes@siriraj.hospital",
-            website: "https://www.siriraj.hospital/diabetes-workshop"
-          },
-          activities: [
-            "Diabetes education sessions",
-            "Blood glucose monitoring training",
-            "Nutrition planning workshops",
-            "Exercise programs for diabetics",
-            "Medication management guidance"
-          ],
-          requirements: [
-            "Diabetes patients and family members",
-            "Pre-registration required",
-            "Bring current medication list"
-          ],
-          registrationInfo: "Pre-registration required. Workshop fee: 500 THB. Scholarships available for low-income patients.",
-          benefits: [
-            "Comprehensive diabetes education",
-            "Practical management skills",
-            "Support group access",
-            "Ongoing follow-up care"
-          ],
-          category: "workshop"
+          category: "career_camp"
         }
       ];
 
