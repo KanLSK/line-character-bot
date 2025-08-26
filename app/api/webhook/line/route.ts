@@ -13,7 +13,9 @@ import { resetContext } from '../../../../utils/conversation-context';
 import { connectToDatabase } from '../../../../lib/db-utils';
 import Character from '../../../../models/Character';
 import { ContextManager } from '../../../../utils/context-manager';
-import { detectEmotion } from '../../../../utils/emotion-detector';
+
+import { generateMedicalInfoResponse } from '../../../../services/medical-info-service';
+import { requestHumanAdmin, endHumanAdminSession } from '../../../../services/human-admin-service';
 
 // Validate environment variables at the start
 validateLineEnv();
@@ -135,10 +137,10 @@ async function handleMessage(event: MessageEvent): Promise<void> {
     
     try {
       await connectToDatabase();
-      const character = await Character.findOne({ name: { $regex: new RegExp(charName, 'i') }, isActive: true });
+      const character = await Character.findOne({ name: { $regex: new RegExp(charName, 'i') }, isActive: true }) as any;
       
       if (character) {
-        const characterId = (character as any)._id.toString();
+        const characterId = character._id.toString();
         userCharacterMap.set(userId, characterId);
         
         // Clear all context for this user
@@ -184,11 +186,14 @@ async function handleMessage(event: MessageEvent): Promise<void> {
   
   // Handle help command
   if (isCommand && command === 'help') {
-    const helpMessage = `🎭 **Siriraj Medical Camp 2025 Chatbot**
+    const helpMessage = `🏥 **Siriraj Medical Camp 2025 Chatbot**
 
 **Commands:**
 /character [name] - Switch to a different character
 /help - Show this help message
+/admin - Talk to human admin
+/medical - Get medical camp information
+/back - Return to character mode
 
 **Available Characters:**
 - Velorien (default) - Gentle and empathetic friend
@@ -197,15 +202,41 @@ async function handleMessage(event: MessageEvent): Promise<void> {
 - Yoda - Wise Jedi Master
 - Luna - Dreamy and mystical
 
+**Modes:**
+🎭 **Character Mode** - Chat with AI characters
+👨‍⚕️ **Human Admin Mode** - Talk to real human admin
+🏥 **Medical Info Mode** - Get professional medical camp information
+
 **Features:**
 - Natural conversations with AI characters
-- Emotional intelligence
-- Personalized responses
+- Human admin support
+- Medical camp information
 - Multi-language support (Thai/English)
 
 Just start chatting naturally! 😊`;
     
     await lineClient.replyMessage(event.replyToken, { type: 'text', text: helpMessage });
+    return;
+  }
+
+  // Handle admin command
+  if (isCommand && command === 'admin') {
+    const adminRequest = await requestHumanAdmin(userId, text);
+    await lineClient.replyMessage(event.replyToken, { type: 'text', text: adminRequest.message });
+    return;
+  }
+
+  // Handle medical command
+  if (isCommand && command === 'medical') {
+    const medicalResponse = await generateMedicalInfoResponse(text, userId);
+    await lineClient.replyMessage(event.replyToken, { type: 'text', text: medicalResponse.response });
+    return;
+  }
+
+  // Handle back command
+  if (isCommand && command === 'back') {
+    const backResponse = await endHumanAdminSession(userId);
+    await lineClient.replyMessage(event.replyToken, { type: 'text', text: backResponse.message });
     return;
   }
   
@@ -234,6 +265,22 @@ Just start chatting naturally! 😊`;
             type: 'message' as const,
             label: '🎭 Switch Character',
             text: '/character'
+          }
+        },
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '👨‍⚕️ Talk to Admin',
+            text: '/admin'
+          }
+        },
+        {
+          type: 'action' as const,
+          action: {
+            type: 'message' as const,
+            label: '🏥 Medical Info',
+            text: '/medical'
           }
         },
         {

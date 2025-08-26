@@ -180,7 +180,6 @@ async function testAllFeatures(userId: string, characterName: string, message: s
   if (!character) {
     return NextResponse.json({ success: false, error: `Character ${characterName} not found` });
   }
-
   // Test all features together
   const emotion = ResponseTemplateManager.detectEmotion(message);
   const context = ResponseTemplateManager.detectContext(message, []);

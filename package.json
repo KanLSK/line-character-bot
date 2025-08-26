@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next out",
     "seed": "npx ts-node --esm scripts/seed-characters.ts",
+    "seed-medical": "npx tsx scripts/seed-medical-camp.ts",
     "test-gemini": "npx ts-node --esm scripts/test-gemini.ts",
     "test-advanced": "curl 'http://localhost:3000/api/test-advanced?action=test-all&userId=test-user&character=velorien&message=เหงาจัง'",
     "validate": "node scripts/validate-setup.cjs",

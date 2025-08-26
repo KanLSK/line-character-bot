@@ -4,26 +4,92 @@ export default function Home() {
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">🏥 Siriraj Medical Camp 2025</h1>
+          <p className="text-xl text-gray-600 mb-8">AI-Powered Medical Information & Support System</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
+          {/* Admin Dashboard */}
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">👨‍⚕️ Admin Dashboard</h2>
+            <p className="text-gray-600 mb-4">Manage user requests and provide human support</p>
+            <a
+              href="/dashboard"
+              className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Open Dashboard
+            </a>
+          </div>
+
+          {/* Medical Camp Info */}
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">🏥 Medical Camp Info</h2>
+            <p className="text-gray-600 mb-4">View and manage medical camp information</p>
+            <a
+              href="/api/medical-camp"
+              className="inline-block bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+            >
+              View Data
+            </a>
+          </div>
+
+          {/* Test Features */}
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">🧪 Test Features</h2>
+            <p className="text-gray-600 mb-4">Test advanced chatbot features</p>
+            <a
+              href="/api/test-advanced"
+              className="inline-block bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors"
+            >
+              Test Features
+            </a>
+          </div>
+
+          {/* Seed Data */}
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">🌱 Seed Data</h2>
+            <p className="text-gray-600 mb-4">Initialize database with sample data</p>
+            <div className="space-y-2">
+              <a
+                href="/api/test-gemini?createTestCharacter=true"
+                className="block bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors text-center"
+              >
+                Seed Characters
+              </a>
+              <a
+                href="/api/medical-camp"
+                className="block bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors text-center"
+              >
+                Seed Medical Data
+              </a>
+            </div>
+          </div>
+
+          {/* API Documentation */}
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">📚 API Docs</h2>
+            <p className="text-gray-600 mb-4">Explore available API endpoints</p>
+            <a
+              href="/api/test-advanced"
+              className="inline-block bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              View APIs
+            </a>
+          </div>
+
+          {/* System Status */}
+          <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+            <h2 className="text-xl font-semibold mb-4">📊 System Status</h2>
+            <p className="text-gray-600 mb-4">Check system health and status</p>
+            <a
+              href="/api/webhook/line/health"
+              className="inline-block bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Health Check
+            </a>
+          </div>
+        </div>
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a

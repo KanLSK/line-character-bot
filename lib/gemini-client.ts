@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { ResponseTemplateManager } from '../utils/response-templates';
 import { ResponseValidator } from '../utils/response-validator';
 import { ContextManager } from '../utils/context-manager';
-import { detectEmotion, getEmotionResponse } from '../utils/emotion-detector';
+import { detectEmotion } from '../utils/emotion-detector';
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -402,3 +402,5 @@ Please provide an improved response that addresses these suggestions while maint
     return originalResponse; // Fallback to original
   }
 } 
+
+ 
